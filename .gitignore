@@ -1,0 +1,4 @@
+.vscode/
+
+nim_crdt/src/*
+!nim_crdt/src/*.nim
