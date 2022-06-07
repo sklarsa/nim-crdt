@@ -29,7 +29,7 @@ type
 
 type
   SetOp = object
-    timestamp: DateTime
+    timestamp: float
     op: SetOpType
 
 type
@@ -37,14 +37,14 @@ type
     ops: TableRef[T, seq[SetOp]]
 
 proc add*[T](s: LwwCrdtSet[T], o: T) =
-  let op = SetOp(timestamp: now(), op: sAdd)
+  let op = SetOp(timestamp: epochTime(), op: sAdd)
   if o notin s.ops:
     s.ops[o] = @[]
   doAssert o in s.ops
   s.ops[o].add(op)
 
 proc rm*[T](s: LwwCrdtSet[T], o: T) =
-  let op = SetOp(timestamp: now(), op: sRm)
+  let op = SetOp(timestamp: epochTime(), op: sRm)
   if o notin s.ops:
     s.ops[o] = @[]
   doAssert o in s.ops
@@ -57,12 +57,20 @@ proc syncLww*[T](s: LwwCrdtSet[T], s1: LwwCrdtSet[T]): CrdtSet[T] =
   let allKeys = toHashSet[T](concat(toSeq(s.ops.keys()), toSeq(s1.ops.keys())))
   for k in allKeys:
     var sData = s.ops.getOrDefault(k, @[]).toDeque()
-    var s1Data = s.ops.getOrDefault(k, @[]).toDeque()
+    var s1Data = s1.ops.getOrDefault(k, @[]).toDeque()
 
-    while sData.len > 0 and s1Data.len > 0:
+    while sData.len > 0 or s1Data.len > 0:
       var reg: SetOp
-      if s1Data.len == 0 or sData[0].timestamp >= s1Data[0].timestamp:
+      # If s1Data is empty, pop from sData
+      if s1Data.len == 0:
         reg = sData.popFirst()
+      # If sData is empty, pop from s1Data
+      elif sData.len == 0:
+        reg = s1Data.popFirst()
+      # If sData occurred before S1Data, pop sData
+      elif sData[0].timestamp <= sData[0].timestamp:
+        reg = sData.popFirst()
+      # Otherwise pop s1Data
       else:
         reg = s1Data.popFirst()
       case reg.op:
@@ -105,3 +113,7 @@ if isMainModule:
   e.add(1)
   f.rm(1)
   assert syncLww(e, f).len() == 0
+
+  f.add(1)
+  e.add(1)
+  assert syncLww(e, f).len() == 1
