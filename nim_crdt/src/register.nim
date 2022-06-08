@@ -11,23 +11,23 @@ proc value*[T](r: LwwCrdtRegister[T]) =
 proc write*[T](r: LwwCrdtRegister[T], o: T) =
   r.ops.addLast((o, epochTime()))
 
-proc syncLww*[T](s: LwwCrdtRegister[T], s1: LwwCrdtRegister[T]): T =
-  # Sync algorithm assumes that operations are naturally time-ordered, which may not always be the case
-  var val: (T, float)
+proc syncLww*[T](r, r1: LwwCrdtRegister[T]): T =
 
-  while s.ops.len > 0 or s1.ops.len > 0:
-    # If s1 is empty, pop from s
-    if s1.ops.len == 0:
-      val = s.ops.popFirst()
-    # If s is empty, pop from s1
-    elif s.ops.len == 0:
-      val = s1.ops.popFirst()
-    # If s occurred before s1, pop s
-    elif s.ops[0][1] <= s1.ops[0][1]:
-      val = s.ops.popFirst()
-    # Otherwise pop s1
+  var val: (T, float)
+  # Sync algorithm assumes that operations are time-ordered
+  while r.ops.len > 0 or r1.ops.len > 0:
+    # If r1 is empty, pop from r
+    if r1.ops.len == 0:
+      val = r.ops.popFirst()
+    # If r is empty, pop from r1
+    elif r.ops.len == 0:
+      val = r1.ops.popFirst()
+    # If r occurred before r1, pop s
+    elif r.ops[0][1] <= r1.ops[0][1]:
+      val = r.ops.popFirst()
+    # Otherwise pop r1
     else:
-      val = s1.ops.popFirst()
+      val = r1.ops.popFirst()
 
   return val[0]
 

@@ -1,3 +1,4 @@
+import std/algorithm
 import std/deques
 import std/sets
 import std/sequtils
@@ -20,10 +21,10 @@ proc len*[T](s: CrdtSet[T]): int =
 proc value*[T](s: CrdtSet[T]): HashSet[T] =
   return s.data
 
-proc syncAddWins*[T](s: CrdtSet[T], s1: CrdtSet[T]): CrdtSet[T] =
+proc syncAddWins*[T](s, s1: CrdtSet[T]): CrdtSet[T] =
   return CrdtSet[T](data: s.data.union(s1.data))
 
-proc syncRmWins*[T](s: CrdtSet[T], s1: CrdtSet[T]): CrdtSet[T] =
+proc syncRmWins*[T](s, s1: CrdtSet[T]): CrdtSet[T] =
   return CrdtSet[T](data: s.data.intersection(s1.data))
 
 type
@@ -34,6 +35,9 @@ type
   SetOp = object
     timestamp: float
     op: SetOpType
+
+proc setOpCmp(x, y: SetOp): int =
+  cmp(x.timestamp, y.timestamp)
 
 type
   LwwCrdtSet*[T] = ref object of CrdtSet[T]
@@ -54,13 +58,13 @@ proc rm*[T](s: LwwCrdtSet[T], o: T) =
   s.ops[o].add(op)
 
 
-proc syncLww*[T](s: LwwCrdtSet[T], s1: LwwCrdtSet[T]): LwwCrdtSet[T] =
+proc syncLww*[T](s, s1: LwwCrdtSet[T]): LwwCrdtSet[T] =
   var d = HashSet[T]()
-  # Sync algorithm assumes that operations are naturally time-ordered, which may not always be the case
   let allKeys = toHashSet[T](concat(toSeq(s.ops.keys()), toSeq(s1.ops.keys())))
   for k in allKeys:
-    var sData = s.ops.getOrDefault(k, @[]).toDeque()
-    var s1Data = s1.ops.getOrDefault(k, @[]).toDeque()
+    # Sync algorithm assumes that operations are time-ordered, so we need to sort both
+    var sData = s.ops.getOrDefault(k, @[]).sorted(setOpCmp).toDeque()
+    var s1Data = s1.ops.getOrDefault(k, @[]).sorted(setOpCmp).toDeque()
 
     while sData.len > 0 or s1Data.len > 0:
       var reg: SetOp
