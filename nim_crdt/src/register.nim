@@ -5,6 +5,9 @@ type
   LwwCrdtRegister*[T] = ref object
     ops: Deque[(T, float)]
 
+proc value*[T](r: LwwCrdtRegister[T]) =
+  return r.ops.peekLast()
+
 proc write*[T](r: LwwCrdtRegister[T], o: T) =
   r.ops.addLast((o, epochTime()))
 

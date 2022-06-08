@@ -14,8 +14,11 @@ proc add*[T](s: CrdtSet[T], o: T) =
 proc rm*[T](s: CrdtSet[T], o: T) =
   s.data.excl(o)
 
-proc len*(s: CrdtSet): int =
+proc len*[T](s: CrdtSet[T]): int =
   return s.data.len
+
+proc value*[T](s: CrdtSet[T]): HashSet[T] =
+  return s.data
 
 proc syncAddWins*[T](s: CrdtSet[T], s1: CrdtSet[T]): CrdtSet[T] =
   return CrdtSet[T](data: s.data.union(s1.data))
@@ -51,7 +54,7 @@ proc rm*[T](s: LwwCrdtSet[T], o: T) =
   s.ops[o].add(op)
 
 
-proc syncLww*[T](s: LwwCrdtSet[T], s1: LwwCrdtSet[T]): CrdtSet[T] =
+proc syncLww*[T](s: LwwCrdtSet[T], s1: LwwCrdtSet[T]): LwwCrdtSet[T] =
   var d = HashSet[T]()
   # Sync algorithm assumes that operations are naturally time-ordered, which may not always be the case
   let allKeys = toHashSet[T](concat(toSeq(s.ops.keys()), toSeq(s1.ops.keys())))
@@ -79,7 +82,7 @@ proc syncLww*[T](s: LwwCrdtSet[T], s1: LwwCrdtSet[T]): CrdtSet[T] =
         of sRm:
           d.excl(k)
 
-  return CrdtSet[T](data: d)
+  return LwwCrdtSet[T](data: d)
 
 
 if isMainModule:
