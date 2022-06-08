@@ -94,6 +94,7 @@ if isMainModule:
   s.rm(2)
 
   assert s.len() == 1
+  assert s.value() == toHashSet([1])
 
   # Test addWins/rmWins sync
   var a = CrdtSet[int]()
@@ -106,8 +107,13 @@ if isMainModule:
   b.add(1)
   b.rm(1)
 
-  assert syncAddWins(a, b).len() == 1
-  assert syncRmWins(a, b).len() == 0
+  let addWins = syncAddWins(a, b)
+  assert addWins.len() == 1
+  assert addWins.value() == toHashSet([1])
+
+  let rmWins = syncRmWins(a, b)
+  assert rmWins.len() == 0
+  assert rmWins.value() == HashSet[int]()
 
   # Test lww sync
   var e = LwwCrdtSet[int](ops: newTable[int, seq[SetOp]]())
