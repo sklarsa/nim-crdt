@@ -17,10 +17,10 @@ proc rm*[T](s: CrdtSet[T], o: T) =
 proc len*(s: CrdtSet): int =
   return s.data.len
 
-proc syncAddWins[T](s: CrdtSet[T], s1: CrdtSet[T]): CrdtSet[T] =
+proc syncAddWins*[T](s: CrdtSet[T], s1: CrdtSet[T]): CrdtSet[T] =
   return CrdtSet[T](data: s.data.union(s1.data))
 
-proc syncRmWins[T](s: CrdtSet[T], s1: CrdtSet[T]): CrdtSet[T] =
+proc syncRmWins*[T](s: CrdtSet[T], s1: CrdtSet[T]): CrdtSet[T] =
   return CrdtSet[T](data: s.data.intersection(s1.data))
 
 type
@@ -53,7 +53,7 @@ proc rm*[T](s: LwwCrdtSet[T], o: T) =
 
 proc syncLww*[T](s: LwwCrdtSet[T], s1: LwwCrdtSet[T]): CrdtSet[T] =
   var d = HashSet[T]()
-  # Sort algorithm assumes that operations are naturally time-ordered, which may not always be the case
+  # Sync algorithm assumes that operations are naturally time-ordered, which may not always be the case
   let allKeys = toHashSet[T](concat(toSeq(s.ops.keys()), toSeq(s1.ops.keys())))
   for k in allKeys:
     var sData = s.ops.getOrDefault(k, @[]).toDeque()
