@@ -5,13 +5,13 @@ type
   LwwCrdtRegister*[T] = ref object
     ops: Deque[(T, float)]
 
-proc value*[T](r: LwwCrdtRegister[T]) =
-  return r.ops.peekLast()
+proc value*[T](r: LwwCrdtRegister[T]): T =
+  return r.ops.peekLast()[0]
 
 proc write*[T](r: LwwCrdtRegister[T], o: T) =
   r.ops.addLast((o, epochTime()))
 
-proc syncLww*[T](r, r1: LwwCrdtRegister[T]): T =
+proc syncLww*[T](r, r1: LwwCrdtRegister[T]): LwwCrdtRegister[T] =
 
   var val: (T, float)
   # Sync algorithm assumes that operations are time-ordered
@@ -29,7 +29,10 @@ proc syncLww*[T](r, r1: LwwCrdtRegister[T]): T =
     else:
       val = r1.ops.popFirst()
 
-  return val[0]
+  var ret = LwwCrdtRegister[T]()
+  ret.write(val[0])
+  return ret
+
 
 
 if isMainModule:
@@ -38,6 +41,6 @@ if isMainModule:
   var b = LwwCrdtRegister[int]()
 
   a.write(1)
-  assert syncLww(a, b) == 1
+  assert syncLww(a, b).value == 1
   b.write(2)
-  assert syncLww(a, b) == 2
+  assert syncLww(a, b).value == 2

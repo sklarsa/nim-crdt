@@ -2,3 +2,11 @@
 
 nim_crdt/src/*
 !nim_crdt/src/*.nim
+!nim_crdt/src/*.nims
+
+
+nim_crdt/tests/*
+!nim_crdt/tests/*.nim
+!nim_crdt/tests/*.nims
+
+profile_results.txt
