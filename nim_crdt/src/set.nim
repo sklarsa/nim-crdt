@@ -123,6 +123,8 @@ if isMainModule:
   var e = LwwCrdtSet[int](ops: newTable[int, seq[SetOp]]())
   var f = LwwCrdtSet[int](ops: newTable[int, seq[SetOp]]())
 
+  assert syncLww(e, f).len() == 0
+
   e.add(1)
   f.rm(1)
   assert syncLww(e, f).len() == 0
